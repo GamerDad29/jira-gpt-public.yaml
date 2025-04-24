@@ -5,7 +5,7 @@ info:
   version: 1.0.0
 
 servers:
-  - url: https://api.atlassian.com/ex/jira/<YOUR_CLOUD_ID>/rest/api/3
+  - url: https://api.atlassian.com/ex/jira/9f9e2920-54a5-4bb9-931e-64ad7b7c30e4/rest/api/3
     description: Jira Cloud API base URL with cloudId
 
 components:

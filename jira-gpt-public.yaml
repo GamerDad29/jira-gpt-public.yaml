@@ -1,0 +1,218 @@
+openapi: 3.1.0
+info:
+  title: Jira GPT Integration API
+  description: Public-safe API schema for GPT-to-Jira interaction.
+  version: 1.0.0
+
+servers:
+  - url: https://api.atlassian.com/ex/jira/<YOUR_CLOUD_ID>/rest/api/3
+    description: Jira Cloud API base URL with cloudId
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.atlassian.com/authorize
+          tokenUrl: https://auth.atlassian.com/oauth/token
+          scopes:
+            read:jira-user: Read Jira user info
+            read:jira-work: Read Jira content
+            write:jira-work: Write Jira content
+
+  schemas:
+    Issue:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        fields:
+          type: object
+          properties:
+            summary:
+              type: string
+            description:
+              type: string
+            issuetype:
+              type: object
+              properties:
+                name:
+                  type: string
+
+paths:
+  /search:
+    get:
+      operationId: getIssues
+      summary: Search Jira issues by JQL
+      parameters:
+        - name: jql
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startAt
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: maxResults
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of issues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  issues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Issue'
+
+  /issue:
+    post:
+      operationId: createIssue
+      summary: Create a new issue (Task, Story, Bug, etc.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fields:
+                  type: object
+                  properties:
+                    project:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          example: PROJECT_KEY
+                    summary:
+                      type: string
+                      example: Implement feature X
+                    description:
+                      type: string
+                      example: Add full details for implementation of feature X.
+                    issuetype:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: Task
+      responses:
+        '201':
+          description: Issue created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+
+  /issue/{issueIdOrKey}:
+    get:
+      operationId: getIssue
+      summary: Get issue details
+      parameters:
+        - name: issueIdOrKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Issue details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+
+    put:
+      operationId: updateIssue
+      summary: Update issue fields (summary, description, type)
+      parameters:
+        - name: issueIdOrKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fields:
+                  type: object
+                  properties:
+                    summary:
+                      type: string
+                    description:
+                      type: string
+                    issuetype:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+      responses:
+        '204':
+          description: Issue updated successfully
+
+  /subtask:
+    post:
+      operationId: createSubTask
+      summary: Create a sub-task under an existing issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fields:
+                  type: object
+                  properties:
+                    project:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          example: PROJECT_KEY
+                    parent:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          example: PARENT-123
+                    summary:
+                      type: string
+                      example: Sub-task title here
+                    description:
+                      type: string
+                    issuetype:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: Sub-task
+      responses:
+        '201':
+          description: Sub-task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+
+security:
+  - OAuth2:
+      - read:jira-user
+      - read:jira-work
+      - write:jira-work
